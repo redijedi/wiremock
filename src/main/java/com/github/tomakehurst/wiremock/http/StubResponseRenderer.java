@@ -88,7 +88,8 @@ public class StubResponseRenderer implements ResponseRenderer {
                 .status(responseDefinition.getStatus())
 				.statusMessage(responseDefinition.getStatusMessage())
                 .headers(responseDefinition.getHeaders())
-                .fault(responseDefinition.getFault());
+                .fault(responseDefinition.getFault())
+                .streaming(responseDefinition.isStreaming());
 
 		if (responseDefinition.specifiesBodyFile()) {
 			BinaryFile bodyFile = fileSource.getBinaryFileNamed(responseDefinition.getBodyFileName());
@@ -114,6 +115,7 @@ public class StubResponseRenderer implements ResponseRenderer {
 	        }
 	    }
     }
+	
     
     private Optional<Integer> getDelayFromResponseOrGlobalSetting(ResponseDefinition response) {
     	Integer delay = response.getFixedDelayMilliseconds() != null ?

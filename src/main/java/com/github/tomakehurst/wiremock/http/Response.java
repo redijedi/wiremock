@@ -33,6 +33,7 @@ public class Response {
 	private final boolean configured;
 	private final Fault fault;
 	private final boolean fromProxy;
+	private final boolean streaming;
 
 	public static Response notConfigured() {
         return new Response(
@@ -42,6 +43,7 @@ public class Response {
                 noHeaders(),
                 false,
                 null,
+                false,
                 false
         );
 	}
@@ -50,7 +52,7 @@ public class Response {
         return new Builder();
     }
 
-	public Response(int status, String statusMessage, byte[] body, HttpHeaders headers, boolean configured, Fault fault, boolean fromProxy) {
+	public Response(int status, String statusMessage, byte[] body, HttpHeaders headers, boolean configured, Fault fault, boolean fromProxy, boolean streaming) {
 		this.status = status;
         this.statusMessage = statusMessage;
         this.body = body;
@@ -58,9 +60,10 @@ public class Response {
         this.configured = configured;
         this.fault = fault;
         this.fromProxy = fromProxy;
+        this.streaming = streaming;
     }
 
-    public Response(int status, String statusMessage, String body, HttpHeaders headers, boolean configured, Fault fault, boolean fromProxy) {
+    public Response(int status, String statusMessage, String body, HttpHeaders headers, boolean configured, Fault fault, boolean fromProxy, boolean streaming) {
         this.status = status;
         this.statusMessage = statusMessage;
         this.headers = headers;
@@ -68,6 +71,18 @@ public class Response {
         this.configured = configured;
         this.fault = fault;
         this.fromProxy = fromProxy;
+        this.streaming = streaming;
+    }
+
+    public Response(int status, String statusMessage, HttpHeaders headers, boolean configured, Fault fault, boolean fromProxy, boolean streaming) {
+        this.status = status;
+        this.statusMessage = statusMessage;
+        this.headers = headers;
+        this.body = null;
+        this.configured = configured;
+        this.fault = fault;
+        this.fromProxy = fromProxy;
+        this.streaming = streaming;
     }
 
 	public int getStatus() {
@@ -84,6 +99,10 @@ public class Response {
 	
 	public String getBodyAsString() {
         return new String(body, encodingFromContentTypeHeaderOrUtf8());
+	}
+	
+	public boolean isStreaming() {
+        return streaming;
 	}
 	
 	public HttpHeaders getHeaders() {
@@ -133,6 +152,7 @@ public class Response {
         private Fault fault;
         private boolean fromProxy;
         private Optional<ResponseDefinition> renderedFromDefinition;
+        private boolean streaming;
 
         public static Builder like(Response response) {
             Builder responseBuilder = new Builder();
@@ -142,6 +162,7 @@ public class Response {
             responseBuilder.configured = response.wasConfigured();
             responseBuilder.fault = response.getFault();
             responseBuilder.fromProxy = response.isFromProxy();
+            responseBuilder.streaming = response.isStreaming();
             return responseBuilder;
         }
 
@@ -175,7 +196,7 @@ public class Response {
 
         private void ensureOnlyOneBodySet() {
             if (body != null && bodyString != null) {
-                throw new IllegalStateException("Body should either be set as a String or byte[], not both");
+                throw new IllegalStateException("Body should either be set as a String or byte[] or OutputStream, not all");
             }
         }
 
@@ -199,13 +220,18 @@ public class Response {
             return this;
         }
 
+        public Builder streaming(boolean streaming) {
+            this.streaming = streaming;
+            return this;
+        }
+
         public Response build() {
             if (body != null) {
-                return new Response(status, statusMessage, body, headers, configured, fault, fromProxy);
+                return new Response(status, statusMessage, body, headers, configured, fault, fromProxy, streaming);
             } else if (bodyString != null) {
-                return new Response(status, statusMessage, bodyString, headers, configured, fault, fromProxy);
+                return new Response(status, statusMessage, bodyString, headers, configured, fault, fromProxy, streaming);
             } else {
-                return new Response(status, statusMessage, new byte[0], headers, configured, fault, fromProxy);
+                return new Response(status, statusMessage, new byte[0], headers, configured, fault, fromProxy, streaming);
             }
         }
     }

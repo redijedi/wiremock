@@ -35,6 +35,8 @@ import static com.google.common.collect.Maps.newHashMap;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Arrays.asList;
 
+import java.io.InputStream;
+
 public class ResponseDefinitionBuilder {
 
 	protected int status = HTTP_OK;
@@ -51,6 +53,7 @@ public class ResponseDefinitionBuilder {
 	protected List<String> responseTransformerNames;
 	protected Map<String, Object> transformerParameters = newHashMap();
 	protected Boolean wasConfigured = true;
+	protected Boolean streaming = false;
 
 	public static ResponseDefinitionBuilder like(ResponseDefinition responseDefinition) {
 		ResponseDefinitionBuilder builder = new ResponseDefinitionBuilder();
@@ -70,6 +73,7 @@ public class ResponseDefinitionBuilder {
 		builder.responseTransformerNames = responseDefinition.getTransformers();
 		builder.transformerParameters = responseDefinition.getTransformerParameters();
 		builder.wasConfigured = responseDefinition.isFromConfiguredStub();
+		builder.streaming = responseDefinition.isStreaming();
 		return builder;
 	}
 
@@ -186,6 +190,11 @@ public class ResponseDefinitionBuilder {
 		return this;
 	}
 
+	public ResponseDefinitionBuilder withStreaming(boolean streaming) {
+		this.streaming = streaming;
+		return this;
+	}
+
 	public static class ProxyResponseDefinitionBuilder extends ResponseDefinitionBuilder {
 
 		private List<HttpHeader> additionalRequestHeaders = newArrayList();
@@ -201,6 +210,7 @@ public class ResponseDefinitionBuilder {
 			this.fixedDelayMilliseconds = from.fixedDelayMilliseconds;
 			this.proxyBaseUrl = from.proxyBaseUrl;
 			this.responseTransformerNames = from.responseTransformerNames;
+			this.streaming = from.streaming;
 		}
 
 		public ProxyResponseDefinitionBuilder withAdditionalRequestHeader(String key, String value) {
@@ -248,7 +258,8 @@ public class ResponseDefinitionBuilder {
 						fault,
 						responseTransformerNames,
 						transformerParameters,
-                        wasConfigured) :
+                        wasConfigured,
+			streaming) :
 				new ResponseDefinition(
 						status,
 						statusMessage,
@@ -264,7 +275,8 @@ public class ResponseDefinitionBuilder {
 						fault,
 						responseTransformerNames,
 						transformerParameters,
-					    wasConfigured
+					    wasConfigured,
+						streaming
 				);
 	}
 }

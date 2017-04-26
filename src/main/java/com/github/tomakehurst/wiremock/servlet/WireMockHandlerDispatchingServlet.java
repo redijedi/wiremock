@@ -20,12 +20,20 @@ import com.github.tomakehurst.wiremock.common.Notifier;
 import com.github.tomakehurst.wiremock.core.FaultInjector;
 import com.github.tomakehurst.wiremock.core.WireMockApp;
 import com.github.tomakehurst.wiremock.http.*;
+import com.google.common.io.ByteStreams;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 
 import static com.github.tomakehurst.wiremock.common.Exceptions.throwUnchecked;
 import static com.github.tomakehurst.wiremock.http.RequestMethod.GET;
@@ -150,8 +158,15 @@ public class WireMockHandlerDispatchingServlet extends HttpServlet {
                 httpServletResponse.addHeader(header.key(), value);
             }
         }
+        
+        if (response.isStreaming()) {
+            streamAndTranslateExceptions(httpServletResponse, response.getBody());
+            
+        } else {
+            writeAndTranslateExceptions(httpServletResponse, response.getBody());
+            
+        }
 
-        writeAndTranslateExceptions(httpServletResponse, response.getBody());
     }
 
 	private FaultInjector buildFaultInjector(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
@@ -167,6 +182,24 @@ public class WireMockHandlerDispatchingServlet extends HttpServlet {
         } catch (IOException e) {
             throwUnchecked(e);
         }
+    }
+
+    private static void streamAndTranslateExceptions(HttpServletResponse httpServletResponse, byte[] content) {
+        try(
+                ServletOutputStream out = httpServletResponse.getOutputStream();
+        ) {
+            String full = new String(content);
+            String[] lines = full.split(System.lineSeparator());
+            for (String line: lines) {
+        	out.write((line + System.lineSeparator()).getBytes());
+        	Thread.sleep(50L);
+        	out.flush();
+            }
+            out.flush();
+            out.close();
+        } catch (InterruptedException | IOException e) {
+            throwUnchecked(e);
+	}
     }
 
     private void forwardToFilesContext(HttpServletRequest httpServletRequest,

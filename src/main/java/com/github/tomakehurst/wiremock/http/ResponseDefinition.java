@@ -53,6 +53,7 @@ public class ResponseDefinition {
 
     private String browserProxyUrl;
     private Boolean wasConfigured = true;
+    private Boolean streaming = false;
     private Request originalRequest;
 
     @JsonCreator
@@ -70,8 +71,9 @@ public class ResponseDefinition {
                               @JsonProperty("fault") Fault fault,
                               @JsonProperty("transformers") List<String> transformers,
                               @JsonProperty("transformerParameters") Parameters transformerParameters,
-                              @JsonProperty("fromConfiguredStub") Boolean wasConfigured) {
-        this(status, statusMessage, Body.fromOneOf(null, body, jsonBody, base64Body), bodyFileName, headers, additionalProxyRequestHeaders, fixedDelayMilliseconds, delayDistribution, proxyBaseUrl, fault, transformers, transformerParameters, wasConfigured);
+                              @JsonProperty("fromConfiguredStub") Boolean wasConfigured,
+                              @JsonProperty("streaming") Boolean streaming) {
+        this(status, statusMessage, Body.fromOneOf(null, body, jsonBody, base64Body), bodyFileName, headers, additionalProxyRequestHeaders, fixedDelayMilliseconds, delayDistribution, proxyBaseUrl, fault, transformers, transformerParameters, wasConfigured, streaming);
     }
 
     public ResponseDefinition(int status,
@@ -88,8 +90,9 @@ public class ResponseDefinition {
                               Fault fault,
                               List<String> transformers,
                               Parameters transformerParameters,
-                              Boolean wasConfigured) {
-        this(status, statusMessage, Body.fromOneOf(body, null, jsonBody, base64Body), bodyFileName, headers, additionalProxyRequestHeaders, fixedDelayMilliseconds, delayDistribution, proxyBaseUrl, fault, transformers, transformerParameters, wasConfigured);
+                              Boolean wasConfigured,
+                              Boolean streaming) {
+        this(status, statusMessage, Body.fromOneOf(body, null, jsonBody, base64Body), bodyFileName, headers, additionalProxyRequestHeaders, fixedDelayMilliseconds, delayDistribution, proxyBaseUrl, fault, transformers, transformerParameters, wasConfigured, streaming);
     }
 
     private ResponseDefinition(int status,
@@ -104,7 +107,8 @@ public class ResponseDefinition {
                                Fault fault,
                                List<String> transformers,
                                Parameters transformerParameters,
-                               Boolean wasConfigured) {
+                               Boolean wasConfigured,
+                               Boolean streaming) {
         this.status = status > 0 ? status : 200;
         this.statusMessage = statusMessage;
 
@@ -120,18 +124,19 @@ public class ResponseDefinition {
         this.transformers = transformers;
         this.transformerParameters = transformerParameters;
         this.wasConfigured = wasConfigured == null ? true : wasConfigured;
+        this.streaming = streaming;
     }
 
     public ResponseDefinition(final int statusCode, final String bodyContent) {
-        this(statusCode, null, Body.fromString(bodyContent), null, null, null, null, null, null, null, Collections.<String>emptyList(), Parameters.empty(), true);
+        this(statusCode, null, Body.fromString(bodyContent), null, null, null, null, null, null, null, Collections.<String>emptyList(), Parameters.empty(), true, false);
     }
 
     public ResponseDefinition(final int statusCode, final byte[] bodyContent) {
-        this(statusCode, null, Body.fromBytes(bodyContent), null, null, null, null, null, null, null, Collections.<String>emptyList(), Parameters.empty(), true);
+        this(statusCode, null, Body.fromBytes(bodyContent), null, null, null, null, null, null, null, Collections.<String>emptyList(), Parameters.empty(), true, false);
     }
 
     public ResponseDefinition() {
-        this(HTTP_OK, null, Body.none(), null, null, null, null, null, null, null, Collections.<String>emptyList(), Parameters.empty(), true);
+        this(HTTP_OK, null, Body.none(), null, null, null, null, null, null, null, Collections.<String>emptyList(), Parameters.empty(), true, false);
     }
 
     public static ResponseDefinition notFound() {
@@ -191,7 +196,8 @@ public class ResponseDefinition {
             original.fault,
             original.transformers,
             original.transformerParameters,
-            original.wasConfigured
+            original.wasConfigured,
+            original.streaming
         );
         return newResponseDef;
     }
@@ -214,6 +220,10 @@ public class ResponseDefinition {
 
     public String getBody() {
         return !body.isBinary() ? body.asString() : null;
+    }
+
+    public Boolean isStreaming() {
+        return streaming;
     }
 
     @JsonIgnore
